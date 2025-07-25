@@ -3,7 +3,6 @@ import json
 import re
 import shutil
 import sys
-import locale
 import tempfile
 from pathlib import Path
 from pydub import AudioSegment
@@ -16,19 +15,17 @@ from huggingface_hub import snapshot_download
 SUPPORTED_EXTENSIONS = (".mp3", ".wav", ".aac", ".m4a")
 CONFIG_FILENAME = "config.json"
 
-# --- Global Variables ---
-get_string = lambda key, **kwargs: key.format(**kwargs)
-
-def load_language_strings(lang_code='en'):
-    """Loads language strings from a JSON file based on the provided language code."""
-    lang_dir = Path("lang")
+def load_language_strings(config):
+    """Loads language strings from a JSON file based on the provided config."""
+    lang_code = config.get("language", "en")
+    lang_dir = Path(config.get("lang_dir", "Lang"))
     lang_file = lang_dir / f"{lang_code}.json"
     
     if not lang_file.is_file():
-        print(f"Warning: Language file for '{lang_code}' not found. Falling back to English.")
+        print(f"Warning: Language file for '{lang_code}' not found in '{lang_dir}'. Falling back to English.")
         lang_file = lang_dir / "en.json"
         if not lang_file.is_file():
-             print("Fatal Error: Default language file 'lang/en.json' not found. Cannot continue.")
+             print(f"Fatal Error: Default language file 'lang/en.json' not found in '{lang_dir}'. Cannot continue.")
              sys.exit(1)
 
     with open(lang_file, 'r', encoding='utf-8') as f:
@@ -43,9 +40,8 @@ def load_config():
     """Loads the config.json file and validates required keys, exiting if any are missing."""
     config_path = Path(CONFIG_FILENAME)
     if not config_path.is_file():
-        # Use a direct print here as language is not yet configured.
         print(f"Error: Configuration file '{CONFIG_FILENAME}' not found.")
-        print("Please ensure you have created a config.json file, or copy one from the default template.")
+        print("Please ensure you have created a config.json file.")
         sys.exit(1)
 
     print(f"  > Loading configuration from {CONFIG_FILENAME}...")
@@ -58,19 +54,19 @@ def load_config():
         sys.exit(1)
 
     required_keys = [
-        "selected_model_key", "local_models_dir", "device", "language", "input_dir",
+        "selected_model_key", "local_models_dir", "device", "language", "lang_dir", "chunking_threshold_seconds", "input_dir",
         "output_dir", "done_dir", "extract_chapter_title", "use_hf_mirror",
         "hf_endpoint", "models"
     ]
     missing_keys = [key for key in required_keys if key not in config]
     if missing_keys:
-        print(get_string("error_config_missing_keys", config_filename=CONFIG_FILENAME, keys=', '.join(missing_keys)))
+        print(f"Error: The configuration file '{CONFIG_FILENAME}' is missing the following required keys: {', '.join(missing_keys)}")
         sys.exit(1)
 
     return config
 
 
-def get_audio_duration(file_path):
+def get_audio_duration(file_path, get_string):
     """Gets the audio duration in seconds using ffprobe without loading the full file."""
     try:
         probe = ffmpeg.probe(file_path)
@@ -88,7 +84,7 @@ def get_audio_duration(file_path):
         return None
 
 
-def prepare_model(config):
+def prepare_model(config, get_string):
     """Checks for a local model and downloads it if not found."""
     model_key = config["selected_model_key"]
     models_dict = config["models"]
@@ -128,7 +124,7 @@ def prepare_model(config):
         print(get_string("error_model_download", error=e))
         return None
 
-def transcribe_in_chunks(model, audio_path, total_duration_sec):
+def transcribe_in_chunks(model, audio_path, total_duration_sec, get_string):
     """
     Transcribes a large audio file by splitting it into chunks to save memory.
     """
@@ -165,7 +161,7 @@ def transcribe_in_chunks(model, audio_path, total_duration_sec):
     return all_segments
 
 
-def extract_cover_art(input_path, temp_dir):
+def extract_cover_art(input_path, temp_dir, get_string):
     """
     Extracts embedded cover art to a temporary file.
     """
@@ -186,7 +182,7 @@ def extract_cover_art(input_path, temp_dir):
         print(get_string("error_extracting_cover_art", error=e))
         return None
 
-def extract_embedded_chapters(file_path):
+def extract_embedded_chapters(file_path, get_string):
     """
     Extracts chapter metadata directly from the audio file if it exists.
     """
@@ -229,40 +225,30 @@ def roman_to_int(s):
 def extract_title_from_text(text):
     """
     Extracts a title from a string, stopping at the first real sentence-ending punctuation.
-    It intelligently handles common abbreviations and initials.
     """
     ABBREVIATIONS = {'mr', 'mrs', 'ms', 'dr', 'prof', 'st', 'vol', 'no', 'etc', 'rev', 'capt'}
     
     if not text:
         return ""
 
-    # Split text into sentences based on punctuation, but keep the punctuation
     sentences = re.split(r'(?<=[.?!])\s+', text)
     
     title_parts = []
-    for i, sentence in enumerate(sentences):
+    for sentence in sentences:
         title_parts.append(sentence)
-        
-        # Check the last word of the current sentence part
         words = sentence.rstrip('.?!').split()
-        if not words:
-            # This part was just punctuation or whitespace, stop here.
-            break
+        if not words: break
             
         last_word = words[-1].lower()
-
-        # If last word is an abbreviation or an initial, continue to the next sentence
         if last_word in ABBREVIATIONS or (len(last_word) == 1 and last_word.isalpha()):
             continue
         else:
-            # This is a true sentence end, so we stop here.
             break
             
-    # Join the collected parts and clean up the final string
     full_title = " ".join(title_parts).strip()
     return full_title.rstrip('.?!').strip()
 
-def parse_srt_for_chapters(srt_path, extract_title=False):
+def parse_srt_for_chapters(srt_path, extract_title, get_string):
     """Parses an SRT file to find chapter markers and optional titles."""
     print(get_string("parsing_srt", filename=srt_path.name))
     chapters = []
@@ -297,10 +283,7 @@ def parse_srt_for_chapters(srt_path, extract_title=False):
                         if chapter_number is None:
                             continue
 
-                        timestamp_line = lines[1]
-                        start_time_str = timestamp_line.split(' --> ')[0]
-                        start_time = srt_time_to_seconds(start_time_str)
-                        
+                        start_time = srt_time_to_seconds(lines[1].split(' --> ')[0])
                         chapter_info = { "number": chapter_number, "start_time": start_time }
 
                         if extract_title:
@@ -333,7 +316,7 @@ def format_srt_time(seconds):
     milliseconds %= 1000
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
-def write_srt_file(segments, srt_path):
+def write_srt_file(segments, srt_path, get_string):
     """Writes transcription segments to a .srt file."""
     try:
         with open(srt_path, 'w', encoding='utf-8') as f:
@@ -359,23 +342,18 @@ def process_chapter_gaps(chapters):
 
     processed_chapters = []
     
-    # Process each detected chapter to define its corresponding segment for splitting.
     for i, current_chap in enumerate(chapters):
         start_time = 0.0 if i == 0 else current_chap['start_time']
         
-        # Determine the next chapter's number to identify gaps.
         is_last_chapter = (i == len(chapters) - 1)
         next_chap_number = chapters[i+1]['number'] if not is_last_chapter else None
 
         number_str = ""
         if is_last_chapter:
-            # The last detected chapter gets a simple number.
             number_str = f"{current_chap['number']:03}"
         elif next_chap_number > current_chap['number'] + 1:
-            # A gap is detected after this chapter, so the current segment covers the missing chapters.
             number_str = f"{current_chap['number']:03}-{(next_chap_number - 1):03}"
         else:
-            # Chapters are consecutive, so use a single number.
             number_str = f"{current_chap['number']:03}"
 
         processed_chapters.append({
@@ -388,9 +366,8 @@ def process_chapter_gaps(chapters):
 
 def main():
     """Main execution function."""
-    global get_string
     config = load_config()
-    get_string = load_language_strings(config.get("language", "en"))
+    get_string = load_language_strings(config)
 
     print(get_string("program_start"))
     
@@ -438,16 +415,16 @@ def main():
         os.makedirs(output_sub_dir, exist_ok=True)
         print(get_string("output_will_be_saved_to", output_sub_dir=output_sub_dir))
         
-        total_duration_sec = get_audio_duration(input_path)
+        total_duration_sec = get_audio_duration(input_path, get_string)
         if total_duration_sec is None:
             print(get_string("error_getting_duration", filename=relative_path))
             continue
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            cover_art_path = extract_cover_art(input_path, temp_dir)
+            cover_art_path = extract_cover_art(input_path, temp_dir, get_string)
 
             chapters = []
-            chapters = extract_embedded_chapters(input_path)
+            chapters = extract_embedded_chapters(input_path, get_string)
             
             if not chapters and json_path.is_file():
                 print(get_string("found_chapter_cache", json_path_name=json_path.name))
@@ -469,7 +446,7 @@ def main():
                     print(get_string("srt_not_found"))
                     if model is None:
                         print(get_string("loading_model"))
-                        model_path = prepare_model(config)
+                        model_path = prepare_model(config, get_string)
                         if not model_path:
                             print(get_string("model_prep_fail"))
                             break
@@ -482,7 +459,7 @@ def main():
                     
                     try:
                         if total_duration_sec > chunk_threshold_sec:
-                            segments = transcribe_in_chunks(model, input_path, total_duration_sec)
+                            segments = transcribe_in_chunks(model, input_path, total_duration_sec, get_string)
                         else:
                             print(get_string("transcription_direct"))
                             segments_generator, _ = model.transcribe(input_path, word_timestamps=True, language="en")
@@ -496,14 +473,14 @@ def main():
                         print(get_string("transcription_complete"))
                         
                         print(get_string("saving_srt", srt_path_name=srt_path.name))
-                        write_srt_file(segments, srt_path)
+                        write_srt_file(segments, srt_path, get_string)
                     except Exception as e:
                         print(get_string("error_transcribing", filename=relative_path, error=e))
                         continue
                 else:
                     print(get_string("found_existing_srt", srt_path_name=srt_path.name))
 
-                chapters = parse_srt_for_chapters(srt_path, extract_title)
+                chapters = parse_srt_for_chapters(srt_path, extract_title, get_string)
             
             if chapters and not json_path.is_file():
                 print(get_string("saving_chapters_to_cache", count=len(chapters), json_path_name=json_path.name))
