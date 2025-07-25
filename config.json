@@ -1,13 +1,14 @@
 {
     "selected_model_key": "tiny.en",
-    "local_models_dir": "local_models",
+    "local_models_dir": "Local_Models",
     "device": "cpu",
     "language": "en",
+    "lang_dir": "Lang",
     "chunking_threshold_seconds": 7200,
-    "input_dir": "input",
-    "output_dir": "output",
+    "input_dir": "Input",
+    "output_dir": "Output",
     "done_dir": "Done",
-    "extract_chapter_title": true,
+    "extract_chapter_title": false,
     "use_hf_mirror": true,
     "hf_endpoint": "https://hf-mirror.com",
     "models": {
