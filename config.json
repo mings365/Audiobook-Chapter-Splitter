@@ -1,0 +1,23 @@
+{
+    "selected_model_key": "tiny.en",
+    "local_models_dir": "local_models",
+    "device": "cpu",
+    "language": "en",
+    "chunking_threshold_seconds": 7200,
+    "input_dir": "input",
+    "output_dir": "output",
+    "done_dir": "Done",
+    "extract_chapter_title": true,
+    "use_hf_mirror": true,
+    "hf_endpoint": "https://hf-mirror.com",
+    "models": {
+        "tiny.en": "Systran/faster-whisper-tiny.en",
+        "base": "Systran/faster-whisper-base",
+        "base.en": "Systran/faster-whisper-base.en",
+        "small": "Systran/faster-whisper-small",
+        "small.en": "Systran/faster-whisper-small.en",
+        "medium": "Systran/faster-whisper-medium",
+        "medium.en": "Systran/faster-whisper-medium.en",
+        "large-v3": "Systran/faster-whisper-large-v3"
+    }
+}
