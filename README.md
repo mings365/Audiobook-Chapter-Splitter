@@ -129,6 +129,6 @@ Modify this file to control the script's behavior.
 | `output_dir` | Directory for split chapter files. | `"output"` |
 | `done_dir` | Directory to archive processed source files. | `"Done"` |
 | `extract_chapter_title`| `true` to extract titles for filenames, `false` to use numbers only. | `true`, `false` |
-| `use_hf_mirror` | `true` to use a mirror for downloading models (recommended for users in China). | `true` |
+| `use_hf_mirror` | `true` to use a mirror for downloading models (recommended for users in China). | `true`, `false` |
 | `hf_endpoint` | The Hugging Face mirror URL. | `"https://hf-mirror.com"` |
 | `models` | A map of model keys to their Hugging Face repository IDs. | `{...}` |
