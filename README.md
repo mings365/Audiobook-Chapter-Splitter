@@ -85,11 +85,7 @@ pip install faster-whisper pydub ffmpeg-python word2number huggingface-hub
    ├── ffmpeg.exe            (Windows only)
    └── ffprobe.exe           (Windows only)
    ```
-
-2. **Configure `config.json`**:
-   The script will create a default `config.json` file on its first run if one is not found. You can modify its parameters as needed (see below).
-
-3. **Run the Script**:
+2. **Run the Script**:
    Open a terminal in your project's root directory and run:
 
    ```bash
