@@ -18,13 +18,9 @@ This tool leverages `faster-whisper` for high-accuracy transcription and intelli
 
 * **Smart Caching**: Automatically creates `.srt` (subtitle) and `.json` (chapter) cache files. On subsequent runs, the script uses these caches to **skip** the time-consuming transcription step.
 
-* **Nested Directory Support**: Recursively scans the `input` folder and preserves the original directory structure in the `output` and `Done` folders.
-
 * **Cover Art Preservation**: Automatically extracts the cover art from the source audio file and embeds it into all split chapter files.
 
 * **Flexible Configuration**: All settings are managed in an external `config.json` file, requiring no code changes for adjustments.
-
-* **Multi-language UI**: Automatically detects your OS language to switch between English and Chinese for console messages.
 
 * **Automatic Archiving**: After processing, moves the source file and its caches to a `Done` directory, keeping the `input` folder clean.
 
