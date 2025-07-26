@@ -9,8 +9,6 @@
     "output_dir": "Output",
     "done_dir": "Done",
     "extract_chapter_title": false,
-    "use_hf_mirror": true,
-    "hf_endpoint": "https://hf-mirror.com",
     "models": {
         "tiny.en": "Systran/faster-whisper-tiny.en",
         "base": "Systran/faster-whisper-base",
