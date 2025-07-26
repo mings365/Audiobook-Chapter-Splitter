@@ -3,17 +3,20 @@ import json
 import re
 import shutil
 import sys
+import locale
 import tempfile
 from pathlib import Path
 from pydub import AudioSegment
 import ffmpeg
 from word2number import w2n
 from faster_whisper import WhisperModel
-from huggingface_hub import snapshot_download
 
 # --- Global Constants ---
 SUPPORTED_EXTENSIONS = (".mp3", ".wav", ".aac", ".m4a")
 CONFIG_FILENAME = "config.json"
+
+# --- Global Variables ---
+get_string = lambda key, **kwargs: key.format(**kwargs)
 
 def load_language_strings(config):
     """Loads language strings from a JSON file based on the provided config."""
@@ -40,6 +43,7 @@ def load_config():
     """Loads the config.json file and validates required keys, exiting if any are missing."""
     config_path = Path(CONFIG_FILENAME)
     if not config_path.is_file():
+        # Use a direct print here as language is not yet configured.
         print(f"Error: Configuration file '{CONFIG_FILENAME}' not found.")
         print("Please ensure you have created a config.json file.")
         sys.exit(1)
@@ -55,8 +59,7 @@ def load_config():
 
     required_keys = [
         "selected_model_key", "local_models_dir", "device", "language", "lang_dir", "chunking_threshold_seconds", "input_dir",
-        "output_dir", "done_dir", "extract_chapter_title", "use_hf_mirror",
-        "hf_endpoint", "models"
+        "output_dir", "done_dir", "extract_chapter_title", "models"
     ]
     missing_keys = [key for key in required_keys if key not in config]
     if missing_keys:
@@ -85,43 +88,18 @@ def get_audio_duration(file_path, get_string):
 
 
 def prepare_model(config, get_string):
-    """Checks for a local model and downloads it if not found."""
+    """Checks for a local model and returns its path."""
     model_key = config["selected_model_key"]
-    models_dict = config["models"]
     local_dir = config["local_models_dir"]
-    use_mirror = config["use_hf_mirror"]
-    hf_endpoint = config["hf_endpoint"]
     
-    model_repo_id = models_dict.get(model_key)
-    if not model_repo_id:
-        print(get_string("error_model_not_in_config", model_key=model_key))
-        return None
-
     model_path = Path(local_dir) / model_key
     
-    if (model_path / "model.bin").exists():
+    # Check for the existence of a key file within the model directory.
+    if (model_path / "model.bin").is_file():
         print(get_string("model_found_locally", model_key=model_key, model_path=model_path))
         return str(model_path)
-    
-    print(get_string("model_downloading", model_key=model_key))
-    try:
-        download_kwargs = {
-            "repo_id": model_repo_id,
-            "local_dir": model_path,
-            "local_dir_use_symlinks": False,
-            "resume_download": True,
-        }
-        if use_mirror:
-            print(get_string("using_mirror", endpoint=hf_endpoint))
-            download_kwargs["endpoint"] = hf_endpoint
-        else:
-            print(get_string("no_mirror"))
-
-        snapshot_download(**download_kwargs)
-        print(get_string("model_download_success", model_key=model_key))
-        return str(model_path)
-    except Exception as e:
-        print(get_string("error_model_download", error=e))
+    else:
+        print(get_string("error_model_not_found_local", model_key=model_key, model_path=model_path))
         return None
 
 def transcribe_in_chunks(model, audio_path, total_duration_sec, get_string):
@@ -410,7 +388,7 @@ def main():
         srt_path = Path(input_path).with_suffix('.srt')
         print(get_string("processing_file", filename=relative_path))
 
-        output_sub_dir_name = Path(input_path).stem
+        output_sub_dir_name = Path(input_path).stem.strip()
         output_sub_dir = os.path.join(output_dir, relative_dir, output_sub_dir_name)
         os.makedirs(output_sub_dir, exist_ok=True)
         print(get_string("output_will_be_saved_to", output_sub_dir=output_sub_dir))
