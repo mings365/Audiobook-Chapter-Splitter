@@ -32,10 +32,10 @@ A powerful Python script to automatically split audiobooks into chapters using W
 If you are not using the pre-packaged release, you need to install the Python dependencies.
 
 ```bash
-pip install faster-whisper pydub ffmpeg-python word2number huggingface-hub
+pip install faster-whisper pydub ffmpeg-python word2number
 ```
 
-**2. Download Language Models (For Manual Setup Only):**
+**3. Download Language Models (For Manual Setup Only):**
 Download Language Models from [huggingface](https://huggingface.co/Systran/faster-whisper-tiny.en/tree/main). Put config.json, model.bin, tokenizer.json, vocabulary.txt into the folder local_models\tiny.en
 
 ## Quick Start
@@ -62,9 +62,7 @@ Download Language Models from [huggingface](https://huggingface.co/Systran/faste
    └── ffprobe.exe (For Windows)
    ```
 
-2. **Configure (Optional)**: On the first run, a `config.json` file is created. You can edit it to change settings like the model size or language.
-
-3. **Run**: Open a terminal in the project folder and execute:
+2. **Run**: Open a terminal in the project folder and execute:
    ```bash
    python run.py
    ```
