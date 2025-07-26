@@ -35,6 +35,8 @@ If you are not using the pre-packaged release, you need to install the Python de
 pip install faster-whisper pydub ffmpeg-python word2number huggingface-hub
 ```
 
+**3. Download Language Moudle from [huggingface](https://huggingface.co/Systran/faster-whisper-tiny.en/tree/main). Put config.json, model.bin, tokenizer.json, vocabulary.txt into the folder local_models\tiny.en
+
 ## Quick Start
 
 1. **Prepare Folders**: Create an `Input` folder and place your audiobooks inside. Your project structure should look like this:
@@ -47,6 +49,12 @@ pip install faster-whisper pydub ffmpeg-python word2number huggingface-hub
    ├── Lang/
    │   ├── en.json
    │   └── zh.json
+   ├── local_models/
+   │   └── tiny.en/
+   │        └── config.json
+   │        └── model.bin
+   │        └── tokenizer.json
+   │        └── vocabulary.txt
    ├── config.json
    ├── run.py
    └── ffmpeg.exe  (For Windows)
