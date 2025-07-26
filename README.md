@@ -1,126 +1,77 @@
 # Audiobook Chapter Splitter
 
-A powerful Python script to automatically transcribe, detect chapters, and split large audio files into chapter-based segments. Ideal for processing audiobooks, lectures, or long podcasts.
+A powerful Python script to automatically split audiobooks into chapters using Whisper transcription, embedded metadata, or SRT files.
 
-This tool leverages `faster-whisper` for high-accuracy transcription and intelligently parses the generated text to find chapter markers, creating a streamlined workflow from a single audio file to a neatly organized collection of chapter files.
+## Key Features
 
-## Features
+* **Multi-Source Chapter Detection**: Intelligently uses embedded metadata, existing caches, or high-accuracy transcription to find chapters.
 
-* **High-Accuracy Transcription**: Utilizes `faster-whisper` for precise, word-level timestamped transcription.
+* **Versatile & Smart**: Recognizes chapter numbers in Arabic, word, and Roman formats, and can optionally extract titles while handling complex punctuation.
 
-* **Intelligent Chapter Detection**:
+* **Fully Automated**: Features smart caching, recursive directory scanning, cover art preservation, and automatic archiving of processed files.
 
-  * **Multi-Source Priority**: Prefers **embedded chapters** first, then `.json` or `.srt` caches, and finally performs transcription, ensuring maximum efficiency.
+* **Highly Configurable**: All settings are managed in a simple `config.json` file.
 
-  * **Versatile Format Support**: Recognizes chapter numbers in various formats: Arabic (`Chapter 1`), word (`Chapter One`), and Roman (`Chapter III`).
+* **Cross-Platform & Multi-language**: Works on Windows, macOS, and Linux, with UI messages in English and Chinese.
 
-  * **Smart Title Extraction**: An optional feature to accurately extract chapter titles, intelligently handling cases like "Mr." and "J. R. R. Tolkien".
+## Installation
 
-* **Smart Caching**: Automatically creates `.srt` (subtitle) and `.json` (chapter) cache files. On subsequent runs, the script uses these caches to **skip** the time-consuming transcription step.
+**1. Install FFmpeg:** This is a mandatory prerequisite.
 
-* **Cover Art Preservation**: Automatically extracts the cover art from the source audio file and embeds it into all split chapter files.
+* **Windows:**
 
-* **Flexible Configuration**: All settings are managed in an external `config.json` file, requiring no code changes for adjustments.
+  * **Option 1 (Recommended):** Download the `.zip` package from the [Releases](https://github.com/your-username/your-repository/releases) page. Unzip it and the program is ready to use.
 
-* **Automatic Archiving**: After processing, moves the source file and its caches to a `Done` directory, keeping the `input` folder clean.
+  * **Option 2 (Manual Setup):** First, install FFmpeg by downloading it from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) and placing `ffmpeg.exe` & `ffprobe.exe` in the script's root directory. Then, proceed to Step 2 below to install Python libraries.
 
-## Installation Guide
+* **macOS:** `brew install ffmpeg`
 
-Before running the script, your system needs **FFmpeg**.
+* **Linux:** `sudo apt-get install ffmpeg` or `sudo dnf install ffmpeg`
 
-#### Windows
-
-1. Download the latest FFmpeg build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
-
-2. Extract the downloaded `.zip` file.
-
-3. From the `bin` folder, copy `ffmpeg.exe` and `ffprobe.exe` into the **same directory** as the `run.py` script. This is the simplest method.
-
-#### macOS
-
-The easiest way is using [Homebrew](https://brew.sh/):
-
-```bash
-brew install ffmpeg
-```
-
-#### Linux
-
-Use your distribution's package manager.
-
-* **Debian/Ubuntu/Mint:**
-
-  ```bash
-  sudo apt-get update && sudo apt-get install ffmpeg
-  ```
-
-* **Fedora/CentOS/RHEL:**
-
-  ```bash
-  sudo dnf install ffmpeg
-  ```
-
-#### Python Dependencies
-
-After installing FFmpeg, install the required Python packages. Using a virtual environment is recommended.
+**2. Install Python Libraries (For Manual Setup Only):**
+If you are not using the pre-packaged release, you need to install the Python dependencies.
 
 ```bash
 pip install faster-whisper pydub ffmpeg-python word2number huggingface-hub
 ```
 
-## How to Use
+## Quick Start
 
-1. **Prepare Project Folder**:
-   Ensure your project folder is structured as follows. The script will create `output`, `Done`, and `local_models` on its first run.
+1. **Prepare Folders**: Create an `Input` folder and place your audiobooks inside. Your project structure should look like this:
 
    ```
-   /Audiobook-Chapter-Splitter/  <-- Project Root
-   ├── lang/
+   /Audiobook-Chapter-Splitter/
+   ├── Input/
+   │   └── My-Audiobook/
+   │       └── book.m4a
+   ├── Lang/
    │   ├── en.json
    │   └── zh.json
-   ├── input/
-   │   └── my_audiobook.m4a
    ├── config.json
    ├── run.py
-   ├── ffmpeg.exe            (Windows only)
-   └── ffprobe.exe           (Windows only)
+   └── ffmpeg.exe  (For Windows)
+   └── ffprobe.exe (For Windows)
    ```
-2. **Run the Script**:
-   Open a terminal in your project's root directory and run:
 
+2. **Configure (Optional)**: On the first run, a `config.json` file is created. You can edit it to change settings like the model size or language.
+
+3. **Run**: Open a terminal in the project folder and execute:
    ```bash
    python run.py
    ```
+   The script will automatically find and process all audio files within the `Input` directory and its subfolders.
 
-## Workflow
+## Configuration
 
-The script follows this priority order for each audio file to maximize efficiency:
+All settings are controlled via the `config.json` file. Key options you might want to change include:
 
-1. **Check for Embedded Chapters**: It first checks for chapter metadata within the audio file itself. If found, it uses this data and skips all other steps.
+* `"selected_model_key"`: To use a more accurate but slower model (e.g., `"base.en"` or `"medium.en"`).
+* `"device"`: Change to `"cuda"` if you have a compatible NVIDIA GPU.
+* `"language"`: Change to `"zh"` for Chinese UI messages.
+* `"extract_chapter_title"`: Set to `true` to include titles in the output filenames.
 
-2. **Check for JSON Cache**: If no embedded chapters, it looks for a `.json` cache file.
+---
 
-3. **Check for SRT Cache**: If no JSON cache, it looks for a `.srt` file to parse.
+## Special Thanks
 
-4. **Speech Recognition**: Only if all the above sources are missing will the script perform a full transcription with Whisper.
-
-5. **Splitting & Archiving**: Finally, it uses the acquired chapter data to split the audio and archives the source files.
-
-## Configuration (`config.json`)
-
-Modify this file to control the script's behavior.
-
-| Parameter | Description | Example Values |
-| :--- | :--- | :--- |
-| `selected_model_key` | The Whisper model to use. Larger models are more accurate but slower. | `"base.en"`, `"medium"` |
-| `local_models_dir` | Directory to store downloaded AI models. | `"local_models"` |
-| `device` | Processing device: `cpu` or `cuda` (for NVIDIA GPUs). | `"cpu"` |
-| `language` | Display language for program messages. | `"en"`, `"zh"` |
-| `chunking_threshold_seconds` | Files longer than this (in seconds) will be processed in chunks to save memory. | `7200` (2 hours) |
-| `input_dir` | Directory for source audio files. | `"input"` |
-| `output_dir` | Directory for split chapter files. | `"output"` |
-| `done_dir` | Directory to archive processed source files. | `"Done"` |
-| `extract_chapter_title`| `true` to extract titles for filenames, `false` to use numbers only. | `true`, `false` |
-| `use_hf_mirror` | `true` to use a mirror for downloading models (recommended for users in China). | `true`, `false` |
-| `hf_endpoint` | The Hugging Face mirror URL. | `"https://hf-mirror.com"` |
-| `models` | A map of model keys to their Hugging Face repository IDs. | `{...}` |
+Special thanks to **Wang Hua(王婳)** for algorithm suggestions and code sharing for this project.
